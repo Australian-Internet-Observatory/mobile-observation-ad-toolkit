@@ -293,21 +293,26 @@ def routine_instance_v2(this_observer_uuid, N_TO_PROCESS_IN_ONE_INSTANCE=250):
 	# firstly check the entrypoint cache to determine which data donations:
 	# 	1. have ocrs
 	# 	2. not have formalized v2 on them
-	selected_entries = [x["k"] for x in entrypoint_cache_ordered if ((("ocr" in x) and ("failsafe" in x))
+	selected_entries_tentative = [x["k"] for x in entrypoint_cache_ordered if ((("ocr" in x) and ("failsafe" in x))
 														and (not (("formalized_v2" in x) or ("formalized" in x))))]
+	selected_entries = list()
 	# of those that fit the criteria, expand their frames and get an idea of how many routines we will be undertaking
 	expanded_data_donations = list()
-	for k in selected_entries:
-		for frame_n in entrypoint_cache[k]["frames"]:
-			expanded_data_donations.append({
-					"data_donation_uuid" : k,
-					"timestamp" : entrypoint_cache[k]["frames"][frame_n],
-					"frame_n" : frame_n
-				})
-		# set a cap on how many we are going to relate in one sitting
-		if ((N_TO_PROCESS_IN_ONE_INSTANCE is not None) and (len(expanded_data_donations) > N_TO_PROCESS_IN_ONE_INSTANCE)):
-			print("Breaking loop early : N_TO_PROCESS_IN_ONE_INSTANCE")
-			break
+	for k in selected_entries_tentative:
+		# If the failsafe and metadata don't exist, disinclude the relevant candidates
+		if ((s3_object_exists(S3_BUCKET_MOBILE_OBSERVATIONS, f"{this_observer_uuid}/temp-v2/{k}/failsafe.json")) 
+				and (s3_object_exists(S3_BUCKET_MOBILE_OBSERVATIONS, f"{this_observer_uuid}/temp-v2/{k}/metadata.json"))):
+			selected_entries.append(k)
+			for frame_n in entrypoint_cache[k]["frames"]:
+				expanded_data_donations.append({
+						"data_donation_uuid" : k,
+						"timestamp" : entrypoint_cache[k]["frames"][frame_n],
+						"frame_n" : frame_n
+					})
+			# set a cap on how many we are going to relate in one sitting
+			if ((N_TO_PROCESS_IN_ONE_INSTANCE is not None) and (len(expanded_data_donations) > N_TO_PROCESS_IN_ONE_INSTANCE)):
+				print("Breaking loop early : N_TO_PROCESS_IN_ONE_INSTANCE")
+				break
 	expanded_data_donations = sorted(expanded_data_donations, key=lambda d: d["timestamp"])
 	# evaluate each frame to determine whether its an ad or not - this is done in two ways
 	#	1. we identify the sponsored text within the ocr
@@ -316,6 +321,7 @@ def routine_instance_v2(this_observer_uuid, N_TO_PROCESS_IN_ONE_INSTANCE=250):
 	unique_data_donation_uuids = list(set([x["data_donation_uuid"] for x in expanded_data_donations]))
 	#print(f"{this_observer_uuid}/temp-v2/{expanded_data_donations[0]['data_donation_uuid']}/failsafe.json")
 	elapsed_time = int(time.time())
+
 	data_donation_failsafe_cache = {x:json.loads(s3.Object(S3_BUCKET_MOBILE_OBSERVATIONS, 
 		f"{this_observer_uuid}/temp-v2/{x}/failsafe.json").get()['Body'].read()) for x in unique_data_donation_uuids}
 	data_donation_metadata_cache = {x:json.loads(s3.Object(S3_BUCKET_MOBILE_OBSERVATIONS, 
@@ -486,6 +492,8 @@ def routine_instance_v2(this_observer_uuid, N_TO_PROCESS_IN_ONE_INSTANCE=250):
 	entrypoint_cache = cache_read(this_observer_uuid, cache_name="entrypoint_cache", template_quick_access_cache=dict())
 	for k in selected_entries:
 		entrypoint_cache[k]["formalized_v2"] = int(time.time())
+		if (not "formalized_v2_uuids" in entrypoint_cache[k]):
+			entrypoint_cache[k]["formalized_v2_uuids"] = list() # Assume creation (so that we can make it the standard)
 	# also run updates for backmappings
 	for data_donation_uuid in data_donations_to_formalized_objs:
 		if (not "formalized_v2_uuids" in entrypoint_cache[data_donation_uuid]):

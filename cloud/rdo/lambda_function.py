@@ -272,6 +272,37 @@ def routine_batch(event, context=None):
 			break
 	return str()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def routine_instance(rdo_intent, context=None):
 	pass_this = False
 	metadata_dict = dict() ##
@@ -385,7 +416,6 @@ def routine_instance(rdo_intent, context=None):
 
 		# CCL V2
 		if (has_ccl_advertiser_name_extraction):
-
 			# Trace backwards - start at the entrypoint_cache, and locate all data donations with the formalized_uuid
 			data_donation_uuids = list()
 			for this_data_donation_uuid in entrypoint_cache:
@@ -420,7 +450,6 @@ def routine_instance(rdo_intent, context=None):
 					grouped_terms_dict[ccl_data_donation_cache_entry["group_uuid"]] = list()
 				grouped_terms_dict[ccl_data_donation_cache_entry["group_uuid"]].append(this_data_donation_uuid)
 			relevant_ccl_cache_uuids = list(set(relevant_ccl_cache_uuids))
-			ipdb.set_trace()
 			ccl_cache_records = dict()
 			for this_ccl_cache_uuid in relevant_ccl_cache_uuids:
 				tentative_record = dict(rdo_intent["ccl_cache"][this_ccl_cache_uuid])
@@ -669,6 +698,47 @@ def routine_instance(rdo_intent, context=None):
 		quick_access_cache["ads_passed_rdo_construction"].append(f"{observer_uuid}/temp/{rdo_path}/")
 		cache_write(observer_uuid, cache=quick_access_cache, cache_name="quick_access_cache")
 	return str()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def routine_target(event, context=None):
 	rdo_intents = list()
@@ -961,6 +1031,36 @@ def test_event_check_joined_at_after_date():
 	ipdb.set_trace()
 
 '''
+	This function determines all records associated with a formalized_uuid
+'''
+def determine_connectors(data_cache, observer_uuid, formalized_uuid):
+
+	entrypoint_cache = cache_read(observer_uuid, cache_name="entrypoint_cache")
+	formalized_cache = cache_read(observer_uuid, cache_name="formalized_cache")
+
+	'''
+		formalized_cache[formalized_uuid]
+	'''
+
+	connecting_data_donations = [k for k in entrypoint_cache 
+		if ("formalized_v2_uuids" in entrypoint_cache[k]) and (formalized_uuid in entrypoint_cache[k]["formalized_v2_uuids"])]
+
+	assert (len(connecting_data_donations) == 1)
+
+	data_donation_uuid = connecting_data_donations[0]
+
+	# Retrieve the CCL cache records
+
+	data_donation_cache_record = data_cache["ccl_data_donation_cache"][f"{observer_uuid}/{data_donation_uuid}.json"]
+
+	ccl_cache_records = [data_cache["ccl_cache"][x] for x in data_donation_cache_record["group_term_uuids"]]
+
+	ccl_download_cache_records = [data_cache["ccl_download_cache"][x["uuid"]] for x in ccl_cache_records]
+
+
+	ipdb.set_trace()
+
+'''
 
 	get device ID and reg code for each user
 
@@ -968,6 +1068,35 @@ def test_event_check_joined_at_after_date():
 
 '''
 if (__name__ == "__main__"):
+
+	this_observer_uuid = "0020c67f-fc44-455b-a62d-1d4039c8c492"
+	this_formalized_uuid = "c568ea51-08aa-4a36-a60a-fe2b6e59461d"
+
+	local_data = {x:json.loads(open(os.path.join(os.getcwd(), "local_cache", x+".json")).read()) 
+				for x in ["ccl_cache", "ccl_data_donation_cache", "ccl_download_cache"]}
+	determine_connectors(local_data, this_observer_uuid, this_formalized_uuid)
+
+
+	ipdb.set_trace()
+
+	local_data = dict()
+	local_cache_path = os.path.join(os.getcwd(), "local_cache")
+
+	local_data["ccl_download_cache"] = distributed_cache_read({
+				"cache" : {
+					"bucket" : "fta-mobile-observations-v2-ccl",
+					"path" : "ccl_download_cache"
+				}
+			})
+
+	ccl_download_cache_path = os.path.join(local_cache_path, "ccl_download_cache.json")
+	if (not os.path.exists(ccl_download_cache_path)):
+		with open(ccl_download_cache_path, "w") as f: 
+			f.write(json.dumps(local_data["ccl_download_cache"], indent=3))
+			f.close()
+
+	ipdb.set_trace()
+
 	#routine_batch(dict())
 	#ipdb.set_trace()
 	
@@ -1008,13 +1137,32 @@ if (__name__ == "__main__"):
 					"path" : "ccl_data_donation_cache_distributed"
 				}
 			})
+	ccl_cache_path = os.path.join(local_cache_path, "ccl_cache.json")
+	ccl_data_donation_cache_path = os.path.join(local_cache_path, "ccl_data_donation_cache.json")
+	if (not os.path.exists(ccl_cache_path)):
+		with open(ccl_cache_path, "w") as f: 
+			f.write(json.dumps(local_data["ccl_cache"], indent=3))
+			f.close()
+	if (not os.path.exists(ccl_data_donation_cache_path)):
+		with open(ccl_data_donation_cache_path, "w") as f: 
+			f.write(json.dumps(local_data["ccl_data_donation_cache"], indent=3))
+			f.close()
+	ipdb.set_trace()
+
+	this_observer_uuid = "723de9f7-e79a-4447-a9b9-1021b98b9850"
+
+	this_formalized_uuid = "4ad4d3ad-1ccb-4b29-9a42-b61803334cc2"
+
+	this_formalized_cache = json.loads(AWS_RESOURCE["s3"].Object(S3_BUCKET_MOBILE_OBSERVATIONS, f"{this_observer_uuid}/formalized_cache.json").get()['Body'].read())
+
+	enacted_syntheses = [x for x in REGARDABLE_SYNTHESES if ((x in this_formalized_cache[this_formalized_uuid]) 
+						and ((not "rdo" in this_formalized_cache[this_formalized_uuid]) 
+								or (this_formalized_cache[this_formalized_uuid][x] > this_formalized_cache[this_formalized_uuid]["rdo"])))]
 
 	routine_instance({
-			"observer_uuid": "48734387-5226-4e96-b97c-2d0747a99898",
-			"formalized_uuid": "23dd6ba2-e1b2-4fe7-b789-f5030645991c",
-			"syntheses": [
-				"ccl_advertiser_name_extraction"
-			]
+			"observer_uuid": this_observer_uuid,
+			"formalized_uuid": this_formalized_uuid,
+			"syntheses": ["ccl_advertiser_scrape", "ccl_advertiser_name_extraction", "ccl_advertiser_scrape_v2_mass_download"]
 		} | local_data)
 	ipdb.set_trace()
 	'''

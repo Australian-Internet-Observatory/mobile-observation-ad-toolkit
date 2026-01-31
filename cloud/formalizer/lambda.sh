@@ -10,7 +10,7 @@ source ./env/bin/activate
 
 mkdir upload
 
-rsync -av . ./upload --exclude="env" --exclude="upload" --exclude="env-local" --exclude="test"  --exclude="test-2" --exclude="group-manual"
+rsync -av . ./upload --exclude="env" --exclude="upload" --exclude="env-local" --exclude="test"  --exclude="test-2" --exclude="group-manual" --exclude="local"
 
 #pip freeze > requirements.txt --no-cache-dir
 #pip install -r requirements.txt -t ./upload --no-cache-dir

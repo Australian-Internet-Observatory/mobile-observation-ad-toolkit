@@ -1,3 +1,15 @@
+import os
+import sys
+import ipdb
+import json
+
+os.environ["AWS_PROFILE"] = "dmrc"
+
+sys.path.append(os.path.join(os.getcwd(), "..", "..", "..", "..", "..", "diagnosis"))
+
+import s3
+import aws
+import utils
 
 
 

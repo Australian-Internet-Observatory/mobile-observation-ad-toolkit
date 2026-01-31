@@ -35,8 +35,6 @@ from botocore.exceptions import ClientError, EndpointConnectionError, Connection
 # Note: On remote infrastructures, we don't authenticate as the Lambda handler will have the necessary
 # permissions built into it
 
-VERBOSE = False
-
 AWS_CONFIG = {
 		"aws" : {
 			"AWS_PROFILE" : "dmrc",
@@ -220,18 +218,18 @@ def distributed_cache_read_s3_wrapper(bucket, key, n_attempt=int(), n_seconds_to
 	except ClientError as e:
 		error_code = e.response['Error']['Code']
 		if error_code in ['SlowDown', 'RequestTimeout', 'Throttling', 'ThrottlingException']:
-			if (VERBOSE): print(f"⚠️ S3 is slowing down or throttling requests: {error_code}")
+			print(f"⚠️ S3 is slowing down or throttling requests: {error_code}")
 			if (n_attempt < 3):
 				time.sleep(n_seconds_to_sleep)
 				return distributed_cache_read_s3_wrapper(bucket, key, n_attempt=n_attempt+1, n_seconds_to_sleep=n_seconds_to_sleep)
 			else:
-				if (VERBOSE): print(f"❌ Attempt to bypass throttling has failed")
+				print(f"❌ Attempt to bypass throttling has failed")
 				raise Exception()
 		elif error_code == 'NoSuchKey':
-			if (VERBOSE): print(f"Could not find cache '{key}' in '{bucket}'")
+			print(f"Could not find cache '{key}' in '{bucket}'")
 			raise Exception()
 		else:
-			if (VERBOSE): print(f"❌ Other S3 error: {e}")
+			print(f"❌ Other S3 error: {e}")
 			raise Exception()
 	except:
 		raise Exception()
@@ -242,19 +240,19 @@ def distributed_cache_write_s3_wrapper(bucket, key, value, n_attempt=int(), n_se
 	except ClientError as e:
 		error_code = e.response['Error']['Code']
 		if error_code in ['SlowDown', 'RequestTimeout', 'Throttling', 'ThrottlingException']:
-			if (VERBOSE): print(f"⚠️ S3 is slowing down or throttling requests: {error_code}")
+			print(f"⚠️ S3 is slowing down or throttling requests: {error_code}")
 			if (n_attempt < 3):
 				time.sleep(n_seconds_to_sleep)
 				distributed_cache_write_s3_wrapper(bucket, key, value, n_attempt=n_attempt+1, n_seconds_to_sleep=n_seconds_to_sleep)
 			else:
-				if (VERBOSE): print(f"❌ Attempt to bypass throttling has failed")
+				print(f"❌ Attempt to bypass throttling has failed")
 				raise Exception()
 		else:
-			if (VERBOSE): print(f"❌ Other S3 error: {e}")
+			print(f"❌ Other S3 error: {e}")
 		raise Exception()
 	except:
-		if (VERBOSE): print(traceback.format_exc())
 		raise Exception()
+		print(traceback.format_exc())
 		pass
 
 def distributed_cache_exists_s3_wrapper(bucket, key):
