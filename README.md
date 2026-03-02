@@ -12,3 +12,5 @@ This project is composed of various sub-codebases that are given as follows:
 * A researcher dashboard web application to view the collected data (see `dashboard`)
 
 These can be accessed from the relevant folders, contained at the top-level of this directory.
+
+### [Appendix](Appendix.pdf)
